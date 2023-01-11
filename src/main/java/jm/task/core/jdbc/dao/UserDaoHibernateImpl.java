@@ -19,7 +19,6 @@ public class UserDaoHibernateImpl implements UserDao {
             session.getTransaction().commit();
 
         } catch (RuntimeException e) {
-            sessionFactory.getCurrentSession().getTransaction().rollback();
             e.printStackTrace();
 
         }
@@ -33,22 +32,23 @@ public class UserDaoHibernateImpl implements UserDao {
             session.getTransaction().commit();
 
         } catch (RuntimeException e) {
-            sessionFactory.getCurrentSession().getTransaction().rollback();
             e.printStackTrace();
         }
     }
 
     @Override
     public void saveUser(String name, String lastName, byte age) {
-        try (Session session = sessionFactory.getCurrentSession()) {
+        Session session = sessionFactory.getCurrentSession();
+        try  {
             User user = new User(name, lastName, age);
             session.beginTransaction();
             session.save(user);
             session.getTransaction().commit();
         } catch (RuntimeException e) {
-            sessionFactory.getCurrentSession().getTransaction().rollback();
+            session.getTransaction().rollback();
             e.printStackTrace();
         }
+        session.close();
     }
 
     @Override
@@ -59,30 +59,39 @@ public class UserDaoHibernateImpl implements UserDao {
             session.delete(user);
             session.getTransaction().commit();
         } catch (RuntimeException e) {
-            sessionFactory.getCurrentSession().getTransaction().rollback();
             e.printStackTrace();
         }
     }
 
     @Override
     public List<User> getAllUsers() {
-        try (Session session = sessionFactory.getCurrentSession()) {
+        Session session = sessionFactory.getCurrentSession();
+        List<User> list = null;
+        try {
             session.beginTransaction();
-            List<User> list = session.createQuery("from User ").getResultList();
+            list = session.createQuery("from User ").getResultList();
             session.getTransaction().commit();
             return list;
+        } catch (RuntimeException e) {
+            e.printStackTrace();
+            session.getTransaction().rollback();
         }
+        session.close();
+        return list;
     }
 
     @Override
     public void cleanUsersTable() {
-        try (Session session = sessionFactory.getCurrentSession()) {
-            session.beginTransaction();
-            session.createQuery("delete User").executeUpdate();
-            session.getTransaction().commit();
-        } catch (RuntimeException e) {
-            sessionFactory.getCurrentSession().getTransaction().rollback();
-            e.printStackTrace();
+        Session session = sessionFactory.getCurrentSession();
+        {
+            try {
+                session.beginTransaction();
+                session.createQuery("delete User").executeUpdate();
+                session.getTransaction().commit();
+            } catch (RuntimeException e) {
+                session.getTransaction().rollback();
+            }
+            session.close();
         }
     }
 }
